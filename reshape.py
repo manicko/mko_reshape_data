@@ -126,7 +126,8 @@ def reshape3(path_in='data/raw', path_out='data/clean'):
                                  na_values="",
                                  )
         data_xls = data_xls[
-            ['Год',
+            [
+                'Год',
              'Начало месяца',
              'Начало недели',
              'День',
@@ -163,9 +164,9 @@ def reshape3(path_in='data/raw', path_out='data/clean'):
              'Stand. TVR (20) Все 30..60 С (Бизнес)'
              ]
         ]
-        for d in ['Начало месяца', 'Начало недели', 'День']:
+        for d in ['День']:
             data_xls[d] = pd.to_datetime(data_xls[d])
-        data_xls['Бренд'] = data_xls['Бренд'].replace('ТИНЬКОФФ', 'Т-БАНК', regex=True)
+        # data_xls['Бренд'] = data_xls['Бренд'].replace('ТИНЬКОФФ', 'Т-БАНК', regex=True)
 
         out_file = Path(path_out, data_file.name).with_suffix('.xlsx')
         writer = pd.ExcelWriter(out_file,
@@ -184,5 +185,80 @@ def reshape3(path_in='data/raw', path_out='data/clean'):
         writer.close()
 
 
+def reshape4(path_in='data/raw', path_out='data/clean'):
+    path_in = Path(path_in)
+    path_out = Path(path_out)
+    files = get_dir_content(path_in, 'xlsx')
+    for file in files:
+        print(f'reading file {file}')
+        data_file = Path(file)
+        data_xls = pd.read_excel(data_file,
+                                 sheet_name=0,
+                                 na_filter=False,
+                                 index_col=None,
+                                 na_values="",
+                                 )
+
+        data_xls['Бренд'] = data_xls['Бренд'].replace('ТИНЬКОФФ', 'Т-БАНК', regex=True)
+
+        out_file = Path(path_out, data_file.name).with_suffix('.xlsx')
+        writer = pd.ExcelWriter(out_file,
+                                engine='xlsxwriter',
+                                datetime_format='dd.mm.yyyy',
+                                date_format='dd.mm.yyyy')
+        data_xls.to_excel(writer, sheet_name='Sheet1', na_rep='', float_format=None, columns=None,
+                          header=True, index=False)
+        workbook = writer.book
+        worksheet = writer.sheets["Sheet1"]
+
+        # Get the dimensions of the dataframe.
+        (max_row, max_col) = data_xls.shape
+        worksheet.set_column(1, max_col, 20)
+
+        writer.close()
+
+def reshape5(path_in='data/raw', path_out='data/clean'):
+    path_in = Path(path_in)
+    path_out = Path(path_out)
+
+    # files = ['2023_w50_clean.xlsx']
+    files = get_dir_content(path_in, 'xlsx')
+    for file in files:
+        print(f'reading file {file}')
+        data_file = Path(file)
+
+        data_xls = pd.read_excel(data_file,
+                                 sheet_name=0,
+                                 na_filter=False,
+                                 index_col=None,
+                                 na_values="",
+                                 )
+
+        for d in ['Начало месяца', 'Начало недели', 'День']:
+            data_xls[d] = pd.to_datetime(data_xls[d])
+        # data_xls['Бренд'] = data_xls['Бренд'].replace('ТИНЬКОФФ', 'Т-БАНК', regex=True)
+
+        # берем данные с 3 колонки
+        # To delete first n columns
+        n = 3
+        data_xls.drop(columns=data_xls.columns[:n], axis=1, inplace=True)
+
+        out_file = Path(path_out, data_file.name).with_suffix('.xlsx')
+        writer = pd.ExcelWriter(out_file,
+                                engine='xlsxwriter',
+                                datetime_format='dd.mm.yyyy',
+                                date_format='dd.mm.yyyy')
+    
+        data_xls.to_excel(writer, sheet_name='Sheet1', na_rep='', float_format=None, columns=None,
+                          header=True, index=False)
+        workbook = writer.book
+        worksheet = writer.sheets["Sheet1"]
+
+        # Get the dimensions of the dataframe.
+        (max_row, max_col) = data_xls.shape
+        worksheet.set_column(1, max_col, 20)
+
+        writer.close()
+
 if __name__ == '__main__':
-    reshape3()
+    reshape5()
