@@ -1,6 +1,6 @@
-import os
-from data_processing.rep_config import ReportConfig
-from data_processing.csv_woker import DataWorker
+from collections.abc import Callable
+from collections import Counter
+
 from pathlib import Path
 from data_processing.utils import (
     clean_names,
@@ -128,41 +128,41 @@ def reshape3(path_in='data/raw', path_out='data/clean'):
         data_xls = data_xls[
             [
                 'Год',
-             'Начало месяца',
-             'Начало недели',
-             'День',
-             'Категория',
-             'Фокус ЦА',
-             'Бренд',
-             'Продукт',
-             'Ролик ожидаемой длителности',
-             'Ролик',
-             'Ролик id',
-             'Ролик тип',
-             'Ролик распространение',
-             'Прайм/офф-прайм',
-             'Национальная телекомпания',
-             'Программа',
-             'Программа тип',
-             'Quantity Все 4+',
-             'Sales TVR Все 4+',
-             'TVR Все 4+',
-             'Stand. TVR (20) Все 4+',
-             'TVR Все 18+',
-             'Stand. TVR (20) Все 18+',
-             'TVR Все 30+ (Итого)',
-             'Stand. TVR (20) Все 30+ (Итого)',
-             'TVR Все 30..60 BC (Кредит)',
-             'Stand. TVR (20) Все 30..60 BC (Кредит)',
-             'TVR Все 30..50 AB (КК и КР)',
-             'Stand. TVR (20) Все 30..50 AB (КК и КР)',
-             'TVR Все 45..60 BC (Вклады)',
-             'Stand. TVR (20) Все 45..60 BC (Вклады)',
-             'TVR Все 55+ AB (Пенс)',
-             'Stand. TVR (20) Все 55+ AB (Пенс)',
-             'TVR Все 30..60 С (Бизнес)',
-             'Stand. TVR (20) Все 30..60 С (Бизнес)'
-             ]
+                'Начало месяца',
+                'Начало недели',
+                'День',
+                'Категория',
+                'Фокус ЦА',
+                'Бренд',
+                'Продукт',
+                'Ролик ожидаемой длителности',
+                'Ролик',
+                'Ролик id',
+                'Ролик тип',
+                'Ролик распространение',
+                'Прайм/офф-прайм',
+                'Национальная телекомпания',
+                'Программа',
+                'Программа тип',
+                'Quantity Все 4+',
+                'Sales TVR Все 4+',
+                'TVR Все 4+',
+                'Stand. TVR (20) Все 4+',
+                'TVR Все 18+',
+                'Stand. TVR (20) Все 18+',
+                'TVR Все 30+ (Итого)',
+                'Stand. TVR (20) Все 30+ (Итого)',
+                'TVR Все 30..60 BC (Кредит)',
+                'Stand. TVR (20) Все 30..60 BC (Кредит)',
+                'TVR Все 30..50 AB (КК и КР)',
+                'Stand. TVR (20) Все 30..50 AB (КК и КР)',
+                'TVR Все 45..60 BC (Вклады)',
+                'Stand. TVR (20) Все 45..60 BC (Вклады)',
+                'TVR Все 55+ AB (Пенс)',
+                'Stand. TVR (20) Все 55+ AB (Пенс)',
+                'TVR Все 30..60 С (Бизнес)',
+                'Stand. TVR (20) Все 30..60 С (Бизнес)'
+            ]
         ]
         for d in ['День']:
             data_xls[d] = pd.to_datetime(data_xls[d])
@@ -217,6 +217,7 @@ def reshape4(path_in='data/raw', path_out='data/clean'):
 
         writer.close()
 
+
 def reshape5(path_in='data/raw', path_out='data/clean'):
     path_in = Path(path_in)
     path_out = Path(path_out)
@@ -248,7 +249,7 @@ def reshape5(path_in='data/raw', path_out='data/clean'):
                                 engine='xlsxwriter',
                                 datetime_format='dd.mm.yyyy',
                                 date_format='dd.mm.yyyy')
-    
+
         data_xls.to_excel(writer, sheet_name='Sheet1', na_rep='', float_format=None, columns=None,
                           header=True, index=False)
         workbook = writer.book
@@ -260,5 +261,35 @@ def reshape5(path_in='data/raw', path_out='data/clean'):
 
         writer.close()
 
+def count_rows(df, column_index, func: Callable | None = None):
+    df['key'] = df.iloc[:, column_index]
+    if func is not None:
+        df['key']= df['key'].apply(func)
+    keys_count = df['key'].value_counts().to_dict()
+
+    return keys_count
+
+def count_by_row_distinct(path_in='data/raw', path_out='data/clean', row_num =0):
+    path_in = Path(path_in)
+    path_out = Path(path_out)
+
+    keys_counter = Counter({})
+    files = get_dir_content(path_in, 'xlsx')
+    for file in files:
+        print(f'reading file {file}')
+        data_file = Path(file)
+
+        data_xls = pd.read_excel(data_file,
+                                 sheet_name=0,
+                                 na_filter=False,
+                                 index_col=None,
+                                 na_values="",
+                                 )
+
+        dict_right = Counter(count_rows(data_xls, 0, lambda x: x.split()[1]))
+        keys_counter += dict_right
+        print(dict_right)
+    print(keys_counter)
+
 if __name__ == '__main__':
-    reshape5()
+    count_by_row_distinct()
